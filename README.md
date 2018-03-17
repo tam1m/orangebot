@@ -16,6 +16,9 @@ You can start a BO3 match with `!start de_dust2 de_cache de_mirage` in game chat
 | default_rcon           | If you want to add servers that are not configured in `server[]` this rcon password will be used.                                     |
 | telegram_token         | You can configure a Telegram - Bot to keep you updated about the game. This is the token for it.                                      |
 | telegram_group         | If you set `telegram_token` you need to specify a groupID where the Bot will write the status updates into.                           |
+| config_warmup          | Sets the config file executed when a match was started. Default is cfg/warmup.cfg                                                     |
+| config_knife           | Sets the config file executed when knife begins. Default is cfg/knife.cfg                                                             |
+| config_match           | Sets the config file executed when a match goes live. Default is cfg/match.cfg                                                        |
 | pause_time             | Limit the maximum duration for a pause in seconds. Set to 0 to not set any time limit.                                                |
 | pause_uses             | Limit how often teams can call a pause per map. Set to 0 to not set any limit.                                                        |
 | ready_time             | Limit the time both teams have to be ready for match start. Set to 0 to not set any limit.                                            |
