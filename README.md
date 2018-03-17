@@ -19,6 +19,7 @@ You can start a BO3 match with `!start de_dust2 de_cache de_mirage` in game chat
 | config_warmup          | Sets the config file executed when a match was started. Default is cfg/warmup.cfg                                                     |
 | config_knife           | Sets the config file executed when knife begins. Default is cfg/knife.cfg                                                             |
 | config_match           | Sets the config file executed when a match goes live. Default is cfg/match.cfg                                                        |
+| config_match           | Sets the default GOTV recording option. If true, demos will be recorded in directory "matches". If false, can be activated by !record.|
 | pause_time             | Limit the maximum duration for a pause in seconds. Set to 0 to not set any time limit.                                                |
 | pause_uses             | Limit how often teams can call a pause per map. Set to 0 to not set any limit.                                                        |
 | ready_time             | Limit the time both teams have to be ready for match start. Set to 0 to not set any limit.                                            |
@@ -29,12 +30,13 @@ You can start a BO3 match with `!start de_dust2 de_cache de_mirage` in game chat
 | !reset                 | Resets current map to warmup state. Not the whole match. (Aliases: !restart, !warmup)                                                 |
 | !leave                 | Tells the bot to leave the server. (Aliases: !disconnect, !quit)                                                                      |
 | !force                 | Starts or resumes match bypassing !ready.                                                                                             |
+| !record                | Enables/Disables GOTV Demo recording.                                                                                                 |
+| !knife                 | Sets/cancels current map to start with a knife round.                                                                                 |
 | !restore [round]       | Restarts the match at a given round by using automatic backup files. (Aliases: !replay)                                               |
 
 | Player commands        | Function                                                                                                                              |
 |------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | !start [map map map …] | Starts a BO1-match in current map or BO[n] match in listed maps. (Aliases: !startmatch, !map, !maps, !match)                          |
-| !knife                 | Sets/cancels current map to start with a knife round.                                                                                 |
 | !ready                 | Tells the bot your team is ready to start or resume the match. Match is LIVE after both teams are ready. (Aliases: !resume, !unpause) |
 | !pause                 | Pauses the match on next freeze time. Match will resume when both teams are !ready.                                                   |
 | !swap                  | Swap teams after knife round. Match is LIVE after one restart. (Aliases: !switch)                                                     |

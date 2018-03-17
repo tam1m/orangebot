@@ -254,10 +254,10 @@ s.on('message', function (msg, info) {
 			servers[addr].swap(match.capture('user_team'));
 			break;
 		case 'knife':
-			servers[addr].knife();
+			if (isadmin) servers[addr].knife();
 			break;
 		case 'record':
-			servers[addr].record();
+			if (isadmin) servers[addr].record();
 			break;
 		case 'disconnect':
 		case 'quit':
