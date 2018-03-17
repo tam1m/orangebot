@@ -4,7 +4,7 @@ var WELCOME = 'say \x10Hi! I\'m OrangeBot.;say \x10Start a match with \x06!start
 	WARMUP_TIME = 'say \x10or after a maximum of \x06{0}\x10 seconds.',
 	WARMUP_TIMEOUT = 'say \x10Starting round in \x0620\x10 seconds.',
 	KNIFE_DISABLED = 'say \x10Cancelled knife round.',
-	KNIFE_STARTING = 'say \x10Both teams are \x06!ready\x10, starting knife round in:;say \x085...',
+	KNIFE_STARTING = 'mp_unpause_match;mp_warmup_pausetimer 0;mp_warmuptime 5;mp_warmup_start; say \x10Both teams are \x06!ready\x10, starting knife round in:;say \x085...',
 	KNIFE_STARTED = 'say \x10Knife round started! GL HF!',
 	KNIFE_WON = 'mp_pause_match;mp_t_default_secondary "weapon_glock";mp_ct_default_secondary "weapon_hkp2000";mp_free_armor 0;mp_give_player_c4 1;say \x06{0} \x10won the knife round!;say \x10Do you want to \x06!stay\x10 or \x06!swap\x10?',
 	KNIFE_STAY = 'mp_unpause_match;mp_restartgame 1;say \x10Match started! GL HF!',
@@ -14,6 +14,7 @@ var WELCOME = 'say \x10Hi! I\'m OrangeBot.;say \x10Start a match with \x06!start
 	PAUSE_REMAINING = 'say \x10Pauses remaining: \x06{0}\x10 of \x06{1}',
 	PAUSE_TIMEOUT = 'say \x10Continuing in \x0620 seconds',
 	PAUSE_TIME = 'say \x10Pause will automatically end in \x06{0} seconds',
+	PAUSE_ALREADY = 'say \x10A pause was already called.',
 	MATCH_STARTING = 'mp_unpause_match;mp_warmup_pausetimer 0;mp_warmuptime 5;mp_warmup_start;log on;say \x10Both teams are \x06!ready\x10, starting match in:;say \x085...',
 	MATCH_STARTED = 'say \x10Match started! GL HF!',
 	MATCH_PAUSED = 'mp_respawn_on_death_t 1;mp_respawn_on_death_ct 1;say \x10Match will resume when both teams are \x06!ready\x10.',
@@ -357,9 +358,9 @@ function Server(address, pass, adminip, adminid, adminname) {
 			return team;
 		}
 		var tags = {};
-		var ret = 'plebs';
-		if (team == 'CT' && this.clantag('TERRORIST') == 'plebs') {
-			ret = 'noobs';
+		var ret = 'mix1';
+		if (team == 'CT' && this.clantag('TERRORIST') == 'mix1') {
+			ret = 'mix2';
 		}
 		for (var i in this.state.players) {
 			if (this.state.players[i].team == team && this.state.players[i].clantag !== undefined) {
@@ -458,7 +459,11 @@ function Server(address, pass, adminip, adminid, adminname) {
 	this.pause = function (team) {
 		team = this.clantag(team);
 		if (!this.state.live) return;
-		
+		if (this.state.paused) {
+			this.rcon(PAUSE_ALREADY);
+			return;
+		}
+
 		if(pauseSettings.uses) 
 		{
 			if (!this.state.pauses[team]) return this.rcon(PAUSE_MISSING);
