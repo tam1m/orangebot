@@ -1,7 +1,7 @@
-# OrangeBot
+# OrangeBot 3.0
 OrangeBot is a CS:GO matchmaking bot written in node.js. It uses a logaddress and rcon to execute server commands based on chat !commands. This means it works on a vanilla CS:GO server.
 
-## Howto
+## Installing
 ```
 npm install
 node orangebot.js
@@ -19,7 +19,7 @@ You can start a BO3 match with `!start de_dust2 de_cache de_mirage` in game chat
 | config_warmup          | Sets the config file executed when a match was started. Default is cfg/warmup.cfg                                                     |
 | config_knife           | Sets the config file executed when knife begins. Default is cfg/knife.cfg                                                             |
 | config_match           | Sets the config file executed when a match goes live. Default is cfg/match.cfg                                                        |
-| recorddemo             | Sets the default GOTV recording option. If true, demos will be recorded in directory "matches". If false, can be activated by !record.|
+| recorddemo             | Sets the default GOTV recording option. If true, demos will be recorded automatically recorded. If false, can be activated by !record.|
 | pause_time             | Limit the maximum duration for a pause in seconds. Set to 0 to not set any time limit.                                                |
 | pause_uses             | Limit how often teams can call a pause per map. Set to 0 to not set any limit.                                                        |
 | ready_time             | Limit the time both teams have to be ready for match start. Set to 0 to not set any limit.                                            |

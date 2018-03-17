@@ -1,11 +1,11 @@
 {
   "name": "orangebot",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "OrangeBot is a CS:GO matchmaking bot written in node.js. It uses udp logging and remote rcon to execute server commands based on chat !commands.",
   "main": "orangebot.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dregu/orangebot"
+    "url": "https://github.com/dejavueakay/orangebot"
   },
   "dependencies": {
     "ip": "latest",

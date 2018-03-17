@@ -583,11 +583,8 @@ function Server(address, pass, adminip, adminid, adminname) {
 			} else if (this.state.ready.TERRORIST === true && this.state.ready.CT === true) {
 				this.state.live = true;
 				if("timer" in this.state.ready) clearTimeout(this.state.ready.timer);
-				var demo = 'matches/' + new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
 				if (this.state.knife) {
-					var config_knife_unformatted = fs.readFileSync(config_knife, 'utf8');
-                			config_knife_formatted = config_knife_unformatted.replace(/(\r\n\t|\n|\r\t)/gm,"; ");
-                			this.rcon(config_knife_formatted);
+                			this.rcon(this.getconfig(config_knife));
 					tag.rcon(KNIFE_STARTING);
 
 
@@ -596,12 +593,10 @@ function Server(address, pass, adminip, adminid, adminname) {
 					}, 9000);
 				} else {
 
-					var config_match_unformatted = fs.readFileSync(config_match, 'utf8');
-                                        config_match_formatted = config_match_unformatted.replace(/(\r\n\t|\n|\r\t)/gm,"; ");
-                                        this.rcon(config_match_formatted);
+					this.rcon(this.getconfig(config_match));
 
 					if (recorddemo === "true") {
-						var demoname = 'matches/' + new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
+						var demoname = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
 						this.rcon('tv_stoprecord; tv_record ' + demoname);
 						this.rcon(DEMO_REC.format(demoname));
 					}
@@ -690,6 +685,12 @@ function Server(address, pass, adminip, adminid, adminname) {
 		}
         };
 
+	this.getconfig = function (file) {
+		var config_unformatted = fs.readFileSync(file, 'utf8');
+		config_formatted = config_unformatted.replace(/(\r\n\t|\n|\r\t)/gm,"; ");
+		return config_formatted;
+	};
+
 	this.startReadyTimer = function() {
 		if(!readyTime) return;
 		if("timer" in this.state.ready) clearTimeout(this.state.ready.timer);
@@ -765,12 +766,9 @@ function Server(address, pass, adminip, adminid, adminname) {
 		this.state.freeze = false;
 		this.state.knifewinner = false;
 		this.state.knife = true;
-	// 	this.rcon(CONFIG);
 
-		var config_warmup_unformatted = fs.readFileSync(config_warmup, 'utf8');
-		config_warmup_formatted = config_warmup_unformatted.replace(/(\r\n\t|\n|\r\t)/gm,"; ");
-		this.rcon(config_warmup_formatted);
-		tag.rcon('say \x10Match will start when both teams are \x06!ready\x10');
+		this.rcon(this.getconfig(config_warmup));
+		tag.rcon(WARMUP);
 	};
 	this.rcon('sv_rcon_whitelist_address ' + myip + ';logaddress_add ' + myip + ':' + myport + ';log on');
 	this.status();
