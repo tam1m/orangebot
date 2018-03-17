@@ -12,6 +12,7 @@
 	"config_warmup": "cfg/warmup.cfg",
         "config_knife": "cfg/knife.cfg",
         "config_match": "cfg/match.cfg",
+	"recorddemo": "true",
 	"pause_time": 0,
 	"pause_uses": 1,
 	"ready_time": 0,

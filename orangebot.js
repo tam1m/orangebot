@@ -24,6 +24,9 @@ var WELCOME = 'say \x10Hi! I\'m OrangeBot.;say \x10Start a match with \x06!start
 	T = 'Terrorists',
 	CT = 'Counter-Terrorists',
 	GOTV_OVERLAY = 'mp_teammatchstat_txt "Match {0} of {1}"; mp_teammatchstat_1 "{2}"; mp_teammatchstat_2 "{3}"',
+	DEMO_REC = 'say \x10Started recording GOTV Demo: \x06{0}',
+	DEMO_RECDISABLED = 'say \x10Disabled GOTV Demo recording.',
+	DEMO_RECENABLED = 'say \x10Enabled GOTV Demo recording.',
 	RESTORE_ROUND = 'mp_backup_restore_load_file "{0}";say \x10Round \x06{1}\x10 has been restored, resuming match in:;say \x085...';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,6 +64,7 @@ var serverType = nconf.get('serverType');
 var config_warmup = nconf.get('config_warmup');
 var config_knife = nconf.get('config_knife');
 var config_match = nconf.get('config_match');
+var recorddemo = nconf.get('recorddemo');
 for (var i in admins) {
 	admins64.push(id64(admins[i]));
 }
@@ -234,6 +238,8 @@ s.on('message', function (msg, info) {
 		case 'resume':
 		case 'ready':
 		case 'rdy':
+		case 'gaben':
+		case 'r':
 		case 'unpause':
 			servers[addr].ready(match.capture('user_team'));
 			break;
@@ -249,6 +255,9 @@ s.on('message', function (msg, info) {
 			break;
 		case 'knife':
 			servers[addr].knife();
+			break;
+		case 'record':
+			servers[addr].record();
 			break;
 		case 'disconnect':
 		case 'quit':
@@ -571,8 +580,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 				if("timer" in this.state.ready) clearTimeout(this.state.ready.timer);
 				var demo = 'matches/' + new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
 				if (this.state.knife) {
-				//	this.rcon(KNIFE_STARTING.format(demo));
-
 					var config_knife_unformatted = fs.readFileSync(config_knife, 'utf8');
                 			config_knife_formatted = config_knife_unformatted.replace(/(\r\n\t|\n|\r\t)/gm,"; ");
                 			this.rcon(config_knife_formatted);
@@ -587,6 +594,12 @@ function Server(address, pass, adminip, adminid, adminname) {
 					var config_match_unformatted = fs.readFileSync(config_match, 'utf8');
                                         config_match_formatted = config_match_unformatted.replace(/(\r\n\t|\n|\r\t)/gm,"; ");
                                         this.rcon(config_match_formatted);
+
+					if (recorddemo === "true") {
+						var demoname = 'matches/' + new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
+						this.rcon('tv_stoprecord; tv_record ' + demoname);
+						this.rcon(DEMO_REC.format(demoname));
+					}
 
 					this.rcon(MATCH_STARTING);
 
@@ -661,6 +674,17 @@ function Server(address, pass, adminip, adminid, adminname) {
 			if("timer" in this.state.ready) clearTimeout(this.state.ready.timer);
 		}
 	};
+        this.record = function () {
+		if (this.state.live) return;
+		if (recorddemo === "true") {
+			recorddemo = "false";
+			this.rcon(DEMO_RECDISABLED);
+		} else {
+			recorddemo = "true";
+			this.rcon(DEMO_RECENABLED);
+		}
+        };
+
 	this.startReadyTimer = function() {
 		if(!readyTime) return;
 		if("timer" in this.state.ready) clearTimeout(this.state.ready.timer);
