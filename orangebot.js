@@ -545,13 +545,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 				this.state.unpause[team] = true;
 			}
 			if (this.state.unpause.TERRORIST != this.state.unpause.CT) {
-
-				if (this.state.unpause.TERRORIST === true) {
-                                        tag.rcon('say \x10Terrorists are \x06!ready\x10, waiting for Counter-Terrorists.');
-                                } else {
-                                        tag.rcon('say \x10Counter-Terrorists are \x06!ready\x10, waiting for Terrorists.');
-                                }
-
+				this.rcon(READY.format(this.state.unpause.TERRORIST ? T : CT, this.state.unpause.TERRORIST ? CT : T));
 			} else if (this.state.unpause.TERRORIST === true && this.state.unpause.CT === true) {
 				if("timer" in this.state.pauses) clearTimeout(this.state.pauses.timer);
 				this.rcon(MATCH_UNPAUSE);
