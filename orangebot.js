@@ -28,6 +28,8 @@ var WELCOME = 'say \x10Hi! I\'m OrangeBot.;say \x10Start a match with \x06!start
 	DEMO_REC = 'say \x10Started recording GOTV Demo: \x06{0}',
 	DEMO_RECDISABLED = 'say \x10Disabled GOTV Demo recording.',
 	DEMO_RECENABLED = 'say \x10Enabled GOTV Demo recording.',
+	OT_ENABLED = 'say \x10Enabled Overtime.',
+	OT_DISABLED = 'say \x10Disabled Overtime.'
 	RESTORE_ROUND = 'mp_backup_restore_load_file "{0}";say \x10Round \x06{1}\x10 has been restored, resuming match in:;say \x085...';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,7 +67,10 @@ var serverType = nconf.get('serverType');
 var config_warmup = nconf.get('config_warmup');
 var config_knife = nconf.get('config_knife');
 var config_match = nconf.get('config_match');
+var config_overtime = nconf.get('config_overtime');
 var recorddemo = nconf.get('recorddemo');
+var knifedefault = nconf.get('knifedefault');
+var otdefault = nconf.get('otdefault');
 for (var i in admins) {
 	admins64.push(id64(admins[i]));
 }
@@ -260,6 +265,10 @@ s.on('message', function (msg, info) {
 		case 'record':
 			if (isadmin) servers[addr].record();
 			break;
+		case 'ot':
+		case 'overtime':
+			if (isadmin) servers[addr].overtime();
+			break;
 		case 'disconnect':
 		case 'quit':
 		case 'leave':
@@ -305,7 +314,9 @@ function Server(address, pass, adminip, adminid, adminname) {
 		live: false,
 		map: '',
 		maps: [],
-		knife: false,
+		knife: knifedefault,
+		record: recorddemo,
+		ot: otdefault,
 		score: [],
 		knifewinner: false,
 		paused: false,
@@ -594,13 +605,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 				} else {
 
 					this.rcon(this.getconfig(config_match));
-
-					if (recorddemo === "true") {
-						var demoname = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
-						this.rcon('tv_stoprecord; tv_record ' + demoname);
-						this.rcon(DEMO_REC.format(demoname));
-					}
-
+					this.startrecord();
 					this.rcon(MATCH_STARTING);
 
 					setTimeout(function () {
@@ -674,16 +679,37 @@ function Server(address, pass, adminip, adminid, adminname) {
 			if("timer" in this.state.ready) clearTimeout(this.state.ready.timer);
 		}
 	};
+
         this.record = function () {
 		if (this.state.live) return;
-		if (recorddemo === "true") {
-			recorddemo = "false";
+		if (this.state.recorddemo === true) {
+			this.state.recorddemo = false;
 			this.rcon(DEMO_RECDISABLED);
 		} else {
-			recorddemo = "true";
+			this.state.recorddemo = true;
 			this.rcon(DEMO_RECENABLED);
 		}
         };
+
+	this.overtime = function () {
+                if (this.state.ot === true) {
+                        this.state.ot = false;
+                        this.rcon(OT_DISABLED);
+			this.rcon('mp_overtime_enable 0');
+                } else {
+                        this.state.ot = true;
+                        this.rcon(OT_ENABLED);
+			this.rcon(this.getconfig(config_overtime));
+                }
+        };
+
+	this.startrecord = function () {
+ 		if (recorddemo === true) {
+		var demoname = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
+		this.rcon('tv_stoprecord; tv_record ' + demoname);
+		this.rcon(DEMO_REC.format(demoname));
+                                        }
+};
 
 	this.getconfig = function (file) {
 		var config_unformatted = fs.readFileSync(file, 'utf8');
@@ -717,11 +743,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 		if (score.TERRORIST + score.CT == 1 && this.state.knife) {
 			this.state.knifewinner = score.TERRORIST == 1 ? 'TERRORIST' : 'CT';
 			this.state.knife = false;
-
-			var config_match_unformatted = fs.readFileSync(config_match, 'utf8');
-			config_match_formatted = config_match_unformatted.replace(/(\r\n\t|\n|\r\t)/gm,"; ");
-                        this.rcon(config_match_formatted);
-
+			this.rcon(this.getconfig(config_match));
 			this.rcon(KNIFE_WON.format(this.state.knifewinner == 'TERRORIST' ? T : CT));
 
 		} else if (this.state.paused) {
@@ -733,12 +755,14 @@ function Server(address, pass, adminip, adminid, adminname) {
 		if (team == this.state.knifewinner) {
 			this.rcon(KNIFE_STAY);
 			this.state.knifewinner = false;
+			this.startrecord();
 		}
 	};
 	this.swap = function (team) {
 		if (team == this.state.knifewinner) {
 			this.rcon(KNIFE_SWAP);
 			this.state.knifewinner = false;
+			this.startrecord();
 		}
 	};
 	this.quit = function () {
@@ -765,9 +789,16 @@ function Server(address, pass, adminip, adminid, adminname) {
 		this.state.paused = false;
 		this.state.freeze = false;
 		this.state.knifewinner = false;
-		this.state.knife = true;
+		this.state.knife = knifedefault;
+		this.state.record = recorddemo;
+		this.state.ot = otdefault;
 
 		this.rcon(this.getconfig(config_warmup));
+
+		if (this.state.ot) { 
+			this.rcon(this.getconfig(config_overtime));
+		}
+
 		tag.rcon(WARMUP);
 	};
 	this.rcon('sv_rcon_whitelist_address ' + myip + ';logaddress_add ' + myip + ':' + myport + ';log on');

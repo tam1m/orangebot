@@ -12,9 +12,12 @@
 	"config_warmup": "cfg/warmup.cfg",
         "config_knife": "cfg/knife.cfg",
         "config_match": "cfg/match.cfg",
-	"recorddemo": "true",
+	"config_overtime": "cfg/overtime.cfg",
+	"recorddemo": true,
+	"knifedefault": true,
+	"otdefault": true,
 	"pause_time": 0,
 	"pause_uses": 1,
 	"ready_time": 0,
-	"serverType": "local"
+	"serverType": "external"
 }
