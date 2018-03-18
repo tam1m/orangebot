@@ -16,3 +16,14 @@ Visit our [Github Wiki](https://github.com/dejavueakay/orangebot/wiki) for a ful
 * [How to install OrangeBot 3.0](https://github.com/dejavueakay/orangebot/wiki/Installation)
 * [How to configure the bot (config.json)](https://github.com/dejavueakay/orangebot/wiki/Settings)
 * [How to use the bot In-game](https://github.com/dejavueakay/orangebot/wiki/In-game-!commands)
+
+## Credits
+
+Credits go to:
+
+* [Dregu](https://github.com/Dregu) for writing an awesome bot! Yay! (OrangeBot 1.0)
+* [JamesCullum](https://github.com/JamesCullum) for contributing, implementing and fixing stuff! (OrangeBot 2.0)
+
+## License
+
+See the LICENSE file for further information. Copyright (c) 2015 Dregu, MIT License.
