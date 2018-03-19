@@ -30,6 +30,10 @@ var WELCOME = 'say \x10Hi! I\'m OrangeBot 3.0.;say \x10Start a match with \x06!s
 	DEMO_RECENABLED = 'say \x10Enabled GOTV Demo recording.',
 	OT_ENABLED = 'say \x10Enabled Overtime.',
 	OT_DISABLED = 'say \x10Disabled Overtime.'
+	SETTINGS = 'say \x10Match Settings:'
+	SETTINGS_KNIFE = 'say \x10Knife: \x06{0}';
+	SETTINGS_RECORDING = 'say \x10GOTV Demo recording: \x06{0}';
+	SETTINGS_OT = 'say \x10Overtime: \x06{0}';
 	RESTORE_ROUND = 'mp_backup_restore_load_file "{0}";say \x10Round \x06{1}\x10 has been restored, resuming match in:;say \x085...';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -269,6 +273,8 @@ s.on('message', function (msg, info) {
 		case 'overtime':
 			if (isadmin) servers[addr].overtime();
 			break;
+		case 'settings':
+			servers[addr].settings();
 		case 'disconnect':
 		case 'quit':
 		case 'leave':
@@ -518,7 +524,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 			port: this.state.port,
 			password: this.state.pass
 		}).on('error', function (err) {
-			//console.log(err);
 		}).exec('status', function (res) {
 			var re = named(/map\s+:\s+(:<map>.*?)\s/);
 			var match = re.exec(res.body);
@@ -691,6 +696,13 @@ function Server(address, pass, adminip, adminid, adminname) {
 		}
         };
 
+	this.settings = function () {
+		this.rcon(SETTINGS);
+		this.rcon(SETTINGS_KNIFE.format(this.state.knife));
+		this.rcon(SETTINGS_RECORDING.format(this.state.record));
+		this.rcon(SETTINGS_OT.format(this.state.ot));
+	}
+
 	this.overtime = function () {
                 if (this.state.ot === true) {
                         this.state.ot = false;
@@ -720,7 +732,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 	this.startReadyTimer = function() {
 		if(!readyTime) return;
 		if("timer" in this.state.ready) clearTimeout(this.state.ready.timer);
-		
 		var tag = this;
 		this.rcon(WARMUP_TIME.format(readyTime));
 		this.state.ready.timer = setTimeout(function() {
@@ -731,10 +742,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 		}, (readyTime-20)*1000);
 	};
 	this.score = function (score) {
-		/*var message = this.clantag('TERRORIST') + ' *' + score.TERRORIST + ' - ' + score.CT + '* ' + this.clantag('CT');
-		bot.sendMessage(groupId, '*Console@' + this.state.ip + ':' + this.state.port + "*\n" + message, {
-			parse_mode: 'Markdown'
-		});*/
 		var tagscore = {};
 		tagscore[this.clantag('CT')] = score.CT;
 		tagscore[this.clantag('TERRORIST')] = score.TERRORIST;
@@ -766,14 +773,13 @@ function Server(address, pass, adminip, adminid, adminname) {
 		}
 	};
 	this.quit = function () {
-		this.rcon('logaddress_delall;log off;say \x10I\'m outta here!');
+		this.rcon('logaddress_delall;log off; say \x10Goodbye from OrangeBot!');
 	};
 	this.debug = function () {
 		this.rcon('say \x10live: ' + this.state.live + ' paused: ' + this.state.paused + ' freeze: ' + this.state.freeze + ' knife: ' + this.state.knife + ' knifewinner: ' + this.state.knifewinner + ' ready: T:' + this.state.ready.TERRORIST + ' CT:' + this.state.ready.CT + ' unpause: T:' + this.state.unpause.TERRORIST + ' CT:' + this.state.unpause.CT);
 		this.stats(true);
 	};
 	this.say = function (msg) {
-		//this.rcon('say \x10' + cleansay(msg));
 		this.rcon('say ' + cleansay(msg));
 	};
 	this.warmup = function () {
