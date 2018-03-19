@@ -34,6 +34,10 @@ var WELCOME = 'say \x10Hi! I\'m OrangeBot 3.0.;say \x10Start a match with \x06!s
 	SETTINGS_KNIFE = 'say \x10Knife: \x06{0}';
 	SETTINGS_RECORDING = 'say \x10GOTV Demo recording: \x06{0}';
 	SETTINGS_OT = 'say \x10Overtime: \x06{0}';
+	SETTINGS_MAPS = 'say \x10Maps: \x06{0}';
+	MAP_FINISHED = 'say \x10Map finished! \x06GG';
+	MAP_CHANGE = 'say \x10Changing map in 20 seconds to: \x06{0}';
+	SERIES_FINISHED = 'say \x10Finished the series!';
 	RESTORE_ROUND = 'mp_backup_restore_load_file "{0}";say \x10Round \x06{1}\x10 has been restored, resuming match in:;say \x085...';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,7 +125,7 @@ s.on('message', function (msg, info) {
 	if (servers[addr] === undefined && addr.match(/(\d+\.){3}\d+/)) {
 		servers[addr] = new Server(String(addr), String(rcon_pass));
 	}
-	//console.log(text);
+//	console.log(text); Nice to debug!
 
 	// join team
 	re = named(/"(:<user_name>.+)[<](:<user_id>\d+)[>][<](:<steam_id>.*)[>]" switched from team [<](:<user_team>CT|TERRORIST|Unassigned|Spectator)[>] to [<](:<new_team>CT|TERRORIST|Unassigned|Spectator)[>]/);
@@ -203,6 +207,13 @@ s.on('message', function (msg, info) {
 		servers[addr].lastlog = +new Date();
 	}
 
+	re = named(/Game Over: competitive/);
+	match = re.exec(text);
+	if (match !== null) {
+		servers[addr].mapend();
+		servers[addr].lastlog = +new Date();
+	}
+
 	// !command
 	re = named(/"(:<user_name>.+)[<](:<user_id>\d+)[>][<](:<steam_id>.*)[>][<](:<user_team>CT|TERRORIST|Unassigned|Spectator|Console)[>]" say(:<say_team>_team)? "[!\.](:<text>.*)"/);
 	match = re.exec(text);
@@ -275,6 +286,7 @@ s.on('message', function (msg, info) {
 			break;
 		case 'settings':
 			servers[addr].settings();
+			break;
 		case 'disconnect':
 		case 'quit':
 		case 'leave':
@@ -320,6 +332,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 		live: false,
 		map: '',
 		maps: [],
+		mapindex: 0,
 		knife: knifedefault,
 		record: recorddemo,
 		ot: otdefault,
@@ -366,7 +379,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 			}
 			conn.close();
 		}).on('error', function (err) {
-			//console.log('err);
 		});
 		conn.connect();
 	};
@@ -532,7 +544,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 				if (tag.state.maps.indexOf(map) >= 0) {
 					tag.state.map = map;
 				} else {
-					//tag.state.maps = [map];
 					tag.state.map = map;
 				}
 				tag.stats(false);
@@ -555,6 +566,9 @@ function Server(address, pass, adminip, adminid, adminname) {
 		this.state.score = [];
 		if (maps.length > 0) {
 			this.state.maps = maps;
+
+			this.state.mapindex = 0;
+
 			if (this.state.map != maps[0]) {
 				this.rcon('changelevel ' + this.state.maps[0]);
 			} else {
@@ -662,11 +676,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 		this.state.pauses[this.clantag('TERRORIST')] = pauseSettings.uses;
 		
 		setTimeout(function () {
-			if (index >= 0 && tag.state.maps[index + 1] !== undefined) {
-				tag.rcon('nextlevel ' + tag.state.maps[index + 1]);
-			} else {
-				tag.rcon('nextlevel ""');
-			}
 			tag.stats(false);
 			tag.warmup();
 			tag.startReadyTimer();
@@ -687,11 +696,11 @@ function Server(address, pass, adminip, adminid, adminname) {
 
         this.record = function () {
 		if (this.state.live) return;
-		if (this.state.recorddemo === true) {
-			this.state.recorddemo = false;
+		if (this.state.record === true) {
+			this.state.record = false;
 			this.rcon(DEMO_RECDISABLED);
 		} else {
-			this.state.recorddemo = true;
+			this.state.record = true;
 			this.rcon(DEMO_RECENABLED);
 		}
         };
@@ -701,6 +710,32 @@ function Server(address, pass, adminip, adminid, adminname) {
 		this.rcon(SETTINGS_KNIFE.format(this.state.knife));
 		this.rcon(SETTINGS_RECORDING.format(this.state.record));
 		this.rcon(SETTINGS_OT.format(this.state.ot));
+
+		var outputmaps = "";
+		for (var i = 0; i < this.state.maps.length; i++) {
+			if (i+1 < this.state.maps.length) {
+				outputmaps += this.state.maps[i];
+				outputmaps += ", ";
+			} else {
+				outputmaps += this.state.maps[i];
+			}
+		}
+		this.rcon(SETTINGS_MAPS.format(outputmaps));
+	}
+
+	 this.mapend = function () {
+		this.rcon(MAP_FINISHED);
+		this.state.mapindex++;
+		if (this.state.maps.length >= 0 && this.state.maps.length == this.state.mapindex) {
+			this.rcon(SERIES_FINISHED);
+			this.state.mapindex = 0;
+		} else if (this.state.maps.length >= 0 && this.state.maps.length > this.state.mapindex) {
+			this.rcon(MAP_CHANGE.format(this.state.maps[this.state.mapindex]));
+			setTimeout( () => {
+				this.rcon('tv_stoprecord');
+				this.rcon('changelevel ' + this.state.maps[this.state.mapindex]);
+			}, 20000);
+		}
 	}
 
 	this.overtime = function () {
@@ -716,7 +751,7 @@ function Server(address, pass, adminip, adminid, adminname) {
         };
 
 	this.startrecord = function () {
- 		if (recorddemo === true) {
+ 		if (this.state.record === true) {
 		var demoname = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
 		this.rcon('tv_stoprecord; tv_record ' + demoname);
 		this.rcon(DEMO_REC.format(demoname));
@@ -773,7 +808,8 @@ function Server(address, pass, adminip, adminid, adminname) {
 		}
 	};
 	this.quit = function () {
-		this.rcon('logaddress_delall;log off; say \x10Goodbye from OrangeBot!');
+		this.rcon('say \x10Goodbye from OrangeBot!');
+		this.rcon('logaddress_delall;log off');
 	};
 	this.debug = function () {
 		this.rcon('say \x10live: ' + this.state.live + ' paused: ' + this.state.paused + ' freeze: ' + this.state.freeze + ' knife: ' + this.state.knife + ' knifewinner: ' + this.state.knifewinner + ' ready: T:' + this.state.ready.TERRORIST + ' CT:' + this.state.ready.CT + ' unpause: T:' + this.state.unpause.TERRORIST + ' CT:' + this.state.unpause.CT);
