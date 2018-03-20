@@ -30,10 +30,13 @@ var WELCOME = 'say \x10Hi! I\'m OrangeBot 3.0.;say \x10Start a match with \x06!s
 	DEMO_RECENABLED = 'say \x10Enabled GOTV Demo recording.',
 	OT_ENABLED = 'say \x10Enabled Overtime.',
 	OT_DISABLED = 'say \x10Disabled Overtime.'
+	FM_ENABLED = 'say \x10Map will be fully played out.',
+	FM_DISABLED = 'say \x10Map will not be played out.'
 	SETTINGS = 'say \x10Match Settings:'
 	SETTINGS_KNIFE = 'say \x10Knife: \x06{0}';
 	SETTINGS_RECORDING = 'say \x10GOTV Demo recording: \x06{0}';
 	SETTINGS_OT = 'say \x10Overtime: \x06{0}';
+	SETTINGS_FULLMAP = 'say \x10Full Map: \x06{0}';
 	SETTINGS_MAPS = 'say \x10Maps: \x06{0}';
 	MAP_FINISHED = 'say \x10Map finished! \x06GG';
 	MAP_CHANGE = 'say \x10Changing map in 20 seconds to: \x06{0}';
@@ -76,9 +79,11 @@ var config_warmup = nconf.get('config_warmup');
 var config_knife = nconf.get('config_knife');
 var config_match = nconf.get('config_match');
 var config_overtime = nconf.get('config_overtime');
+var config_fullmap = nconf.get('config_fullmap');
 var recorddemo = nconf.get('recorddemo');
 var knifedefault = nconf.get('knifedefault');
 var otdefault = nconf.get('otdefault');
+var fullmapdefault = nconf.get('fullmapdefault');
 for (var i in admins) {
 	admins64.push(id64(admins[i]));
 }
@@ -284,6 +289,9 @@ s.on('message', function (msg, info) {
 		case 'overtime':
 			if (isadmin) servers[addr].overtime();
 			break;
+		case 'fullmap':
+			if (isadmin) servers[addr].fullmap();
+			break;
 		case 'settings':
 			servers[addr].settings();
 			break;
@@ -336,6 +344,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 		knife: knifedefault,
 		record: recorddemo,
 		ot: otdefault,
+		fullmap: fullmapdefault,
 		score: [],
 		knifewinner: false,
 		paused: false,
@@ -710,6 +719,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 		this.rcon(SETTINGS_KNIFE.format(this.state.knife));
 		this.rcon(SETTINGS_RECORDING.format(this.state.record));
 		this.rcon(SETTINGS_OT.format(this.state.ot));
+		this.rcon(SETTINGS_FULLMAP.format(this.state.fullmap));
 
 		var outputmaps = "";
 		for (var i = 0; i < this.state.maps.length; i++) {
@@ -750,6 +760,18 @@ function Server(address, pass, adminip, adminid, adminname) {
                 }
         };
 
+	this.fullmap = function () {
+		if (this.state.fullmap === true) {
+			this.state.fullmap = false;
+			this.rcon(FM_DISABLED);
+			this.rcon('mp_match_can_clinch 0');
+		} else {
+			this.state.fullmap = true;
+			this.rcon(FM_ENABLED);
+			this.rcon(this.getconfig(config_fullmap));
+		}
+	};
+	
 	this.startrecord = function () {
  		if (this.state.record === true) {
 		var demoname = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
@@ -834,11 +856,16 @@ function Server(address, pass, adminip, adminid, adminname) {
 		this.state.knife = knifedefault;
 		this.state.record = recorddemo;
 		this.state.ot = otdefault;
+		this.state.fullmap = fullmapdefault;
 
 		this.rcon(this.getconfig(config_warmup));
 
 		if (this.state.ot) { 
 			this.rcon(this.getconfig(config_overtime));
+		}
+		
+		if (this.state.fullmap) {
+			this.rcon(this.getconfig(config_fullmap));
 		}
 
 		tag.rcon(WARMUP);
