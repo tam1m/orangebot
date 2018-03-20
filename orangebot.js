@@ -44,7 +44,7 @@ var WELCOME = 'say \x10Hi! I\'m OrangeBot 3.0.;say \x10Start a match with \x06!s
 	RESTORE_ROUND = 'mp_backup_restore_load_file "{0}";say \x10Round \x06{1}\x10 has been restored, resuming match in:;say \x085...';
 
 ///////////////////////////////////////////////////////////////////////////////
-
+console.log('OrangeBot 3.0: Loading modules ...');
 var argv = require('minimist')(process.argv.slice(2));
 var named = require('named-regexp').named;
 var rcon = require('simple-rcon');
@@ -61,9 +61,18 @@ require('public-ip').v4().then(ip => {
 	initConnection();
 });
 var fs = require('fs');
+var tcpp = require('tcp-ping');
 var myip;
 
 if (argv.i == undefined) { argv.i = "config.json" };
+console.log('OrangeBot 3.0: Checking if we can find config file ...');
+if (!fs.existsSync(argv.i)) {
+	console.log('ERROR: Could not find ini file: ' + argv.i);
+	console.log('OrangeBot 3.0: Exiting with code 1.');
+	process.exit(1);
+} else {
+	console.log('OrangeBot 3.0: Found config file: ' + argv.i);
+}
 
 var nconf = require('nconf');
 nconf.file({
@@ -304,7 +313,7 @@ s.on('message', function (msg, info) {
 			if (isadmin) {
 				servers[addr].quit();
 				delete servers[addr];
-				console.log('Disconnected from ' + addr);
+				console.log('OrangeBot 3.0: ' + addr + ' - Disconnected by admin.');
 			}
 			break;
 		case 'say':
@@ -385,12 +394,12 @@ function Server(address, pass, adminip, adminid, adminname) {
 			password: this.state.pass
 		});
 		conn.on('authenticated', function () {
-			cmd = cmd.split(';');
-			for (var i in cmd) {
-				conn.exec(String(cmd[i]));
-			}
-			conn.close();
-		}).on('error', function (err) {
+				cmd = cmd.split(';');
+				for (var i in cmd) {
+					conn.exec(String(cmd[i]));
+				}
+				conn.close();
+		}).on('error', function () {
 		});
 		conn.connect();
 	};
@@ -879,7 +888,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 		tag.rcon(WELCOME);
 	}, 1000);
 	s.send("plz go", 0, 6, this.state.port, this.state.ip); // SRCDS won't send data if it doesn't get contacted initially
-	console.log('OrangeBot 3.0: Connected to server ' + this.state.ip + ':' + this.state.port + ', RCON ' + this.state.pass);
+	console.log('OrangeBot 3.0: ' + this.state.ip + ':' + this.state.port + ' - Connected to Server.');
 }
 setInterval(function () {
 	for (var i in servers) {
@@ -919,25 +928,52 @@ process.on('uncaughtException', function (err) {
 });
 
 function addServer(host, port, pass) {
-	dns.lookup(host, 4, function (err, ip) {
-		servers[ip + ':' + port] = new Server(ip + ':' + port, pass);
+	console.log('OrangeBot 3.0: ' + host + ':' + port + ' - Trying to establish connection to Server . . .');
+	tcpp.probe(host, port, function(err, available) {
+		if (available) {
+			dns.lookup(host, 4, function (err, ip) {
+				console.log('OrangeBot 3.0: ' + host + ':' + port + ' - Server is reachable. Adding to server list and connecting . . .');
+				servers[ip + ':' + port] = new Server(ip + ':' + port, pass);
+			});
+		} else {
+		console.log('OrangeBot 3.0: ' + host + ':' + port + ' - ERROR: Server is not reachable.');
+		}
 	});
+
 }
 
-function initConnection()
-{
+function initConnection() {
+	 if(argv.h === true) {
+		console.log('Usage: 		node orangebot.js [-i config.json] [-h]');
+		console.log('Description: 	OrangeBot 3.0 is a CS:GO matchmaking bot written in node.js.');
+		console.log('GitHub:		https://github.com/dejavueakay/orangebot');
+		console.log();
+		console.log('Arguments:');
+		console.log(' -i config.json			Set the config.json file to use');
+		console.log(' -h				See this help');
+		console.log();
+		console.log('For further documentation, visit our GitHub wiki: https://github.com/dejavueakay/orangebot/wiki');
+		process.exit();
+	}
+	console.log('OrangeBot 3.0: UDP Socket listening on ' + myport);
+	console.log('____________________________________________________________');
+	console.log();
 	if(serverType == "local") myip = localIp;
 	else myip = externalIp;
-	
 	for (var i in server_config) {
 		if (server_config.hasOwnProperty(i)) {
 			addServer(server_config[i].host, server_config[i].port, server_config[i].pass);
 		}
 	}
-	console.log('OrangeBot 3.0: Using ini file: ' + argv.i);
-	console.log('OrangeBot 3.0: UDP Socket listening on ' + myport);
-//	console.log('Run this in CS console to connect or configure orangebot.js:');
-//	console.log('connect YOUR_SERVER;password YOUR_PASS;rcon_password YOUR_RCON;rcon sv_rcon_whitelist_address ' + externalIp + ';rcon logaddress_add ' + externalIp + ':' + myport + ';rcon log on; rcon rcon_password '+rcon_pass+"\n");
+
+	setTimeout( () => {
+		console.log('____________________________________________________________');
+		console.log();
+		console.log('OrangeBot 3.0: If you want to add more servers without putting them in youf config.json, you can add them In-game by typing this in your console:');
+		console.log('OrangeBot 3.0: connect YOURSERVER; password YOURPASSWORD; rcon_password YOURRCON; rcon sv_whitelist_address ' + externalIp + '; rcon logaddress_add ' + externalIp + ':' + myport + ';rcon log on; rcon rcon_password ' + rcon_pass);
+		console.log('____________________________________________________________');
+		console.log();
+	}, 3000);
 }
 
 function id64(steamid) {

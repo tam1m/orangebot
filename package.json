@@ -16,6 +16,7 @@
     "simple-rcon": "latest",
     "steamid": "latest",
     "node-telegram-bot-api": "latest",
-    "minimist": "latest"
+    "minimist": "latest",
+    "tcp-ping": "latest"
   }
 }
