@@ -776,7 +776,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 		if (this.state.fullmap === true) {
 			this.state.fullmap = false;
 			this.rcon(FM_DISABLED);
-			this.rcon('mp_match_can_clinch 0');
+			this.rcon('mp_match_can_clinch 1');
 		} else {
 			this.state.fullmap = true;
 			this.rcon(FM_ENABLED);
