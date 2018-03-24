@@ -26,6 +26,7 @@ var WELCOME = 'say \x10Hi! I\'m OrangeBot 3.0.;say \x10Start a match with \x06!s
 	CT = 'Counter-Terrorists',
 	GOTV_OVERLAY = 'mp_teammatchstat_txt "Match {0} of {1}"; mp_teammatchstat_1 "{2}"; mp_teammatchstat_2 "{3}"',
 	DEMO_REC = 'say \x10Started recording GOTV Demo: \x06{0}',
+	DEMO_FINISHED = 'say \x10Finished recording GOTV Demo: \x06{0}',
 	DEMO_RECDISABLED = 'say \x10Disabled GOTV Demo recording.',
 	DEMO_RECENABLED = 'say \x10Enabled GOTV Demo recording.',
 	OT_ENABLED = 'say \x10Enabled Overtime.',
@@ -388,6 +389,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 		mapindex: 0,
 		knife: knifedefault,
 		record: recorddemo,
+		demoname: '',
 		ot: otdefault,
 		fullmap: fullmapdefault,
 		score: [],
@@ -781,13 +783,17 @@ function Server(address, pass, adminip, adminid, adminname) {
 	 this.mapend = function () {
 		this.rcon(MAP_FINISHED);
 		this.state.mapindex++;
+		if (this.state.record === true) {
+			this.rcon('tv_stoprecord');
+			this.rcon(DEMO_FINISHED.format(this.state.demoname));
+		}
+
 		if (this.state.maps.length >= 0 && this.state.maps.length == this.state.mapindex) {
 			this.rcon(SERIES_FINISHED);
 			this.state.mapindex = 0;
 		} else if (this.state.maps.length >= 0 && this.state.maps.length > this.state.mapindex) {
 			this.rcon(MAP_CHANGE.format(this.state.maps[this.state.mapindex]));
 			setTimeout( () => {
-				this.rcon('tv_stoprecord');
 				this.rcon('changelevel ' + this.state.maps[this.state.mapindex]);
 			}, 20000);
 		}
@@ -820,6 +826,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 	this.startrecord = function () {
  		if (this.state.record === true) {
 		var demoname = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '_' + this.state.map + '_' + clean(this.clantag('TERRORIST')) + '-' + clean(this.clantag('CT')) + '.dem';
+		this.state.demoname = demoname;
 		this.rcon('tv_stoprecord; tv_record ' + demoname);
 		this.rcon(DEMO_REC.format(demoname));
                                         }
