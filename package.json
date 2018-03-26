@@ -15,7 +15,6 @@
     "nconf": "latest",
     "simple-rcon": "latest",
     "steamid": "latest",
-    "node-telegram-bot-api": "latest",
     "minimist": "latest",
     "tcp-ping": "latest"
   }

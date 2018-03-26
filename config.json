@@ -3,7 +3,7 @@
 	"server": [{
 		"host": "10.0.0.24",
 		"port": 27015,
-		"pass": "ankka"
+		"rconpass": "ankka"
 	}],
 	"admins": [],
 	"default_rcon": "ankka",
@@ -19,7 +19,6 @@
 	"otdefault": true,
 	"fullmapdefault": false, 
 	"pause_time": 0,
-	"pause_uses": 10,
 	"ready_time": 0,
 	"serverType": "external"
 }
