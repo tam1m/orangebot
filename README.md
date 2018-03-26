@@ -1,10 +1,16 @@
-# OrangeBot 3.0
+# OrangeBot v3.0
 OrangeBot is a CS:GO matchmaking bot written in node.js. It uses a logaddress and rcon to execute server commands based on chat !commands. This means it works on a vanilla CS:GO server.
 
 ## Quick Start
+
+You can either run the code directly with node (recommended):
 ```
 npm install
 node orangebot.js
+```
+Or use our precompiled binaries:
+```
+./orangebot 
 ```
 You can start a BO3 match with `!start de_dust2 de_cache de_mirage` in game chat. Both teams have to `!ready` once to start the match. A knife round will start before each map. Players can `!pause` the game on next freezetime if they want to.
 
@@ -21,8 +27,8 @@ Visit our [Github Wiki](https://github.com/dejavueakay/orangebot/wiki) for a ful
 
 Credits go to:
 
-* [Dregu](https://github.com/Dregu) for writing an awesome bot! Yay! (OrangeBot 1.0)
-* [JamesCullum](https://github.com/JamesCullum) for contributing, implementing and fixing stuff! (OrangeBot 2.0)
+* [Dregu](https://github.com/Dregu) for writing an awesome bot! Yay! (OrangeBot v1.0)
+* [JamesCullum](https://github.com/JamesCullum) for contributing, implementing and fixing stuff! (OrangeBot v2.0)
 
 ## License
 
