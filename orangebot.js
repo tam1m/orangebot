@@ -100,9 +100,8 @@ nconf.file({
 	file: argv.i
 });
 
-var pauseSettings = {'uses':nconf.get('pause_uses'), 'time':nconf.get('pause_time')};
+var pauseTime = nconf.get('pause_time');
 var readyTime = nconf.get('ready_time');
-var token = nconf.get('telegram_token');
 var myport = nconf.get('port');
 var rcon_pass = nconf.get('default_rcon');
 var admins = nconf.get('admins');
@@ -134,30 +133,8 @@ for (var i in configs) {
 }
 
 
-if(pauseSettings.time && pauseSettings.time <= 30) pauseSettings.time = 30;
+if(pauseTime && pauseTime <= 30) pauseTime = 30;
 if(readyTime && readyTime <= 30) readyTime = 30;
-if(token.length)
-{
-	var TelegramBot = require('node-telegram-bot-api');
-	var bot = new TelegramBot(token, {
-		polling: true
-	});
-	var groupId = nconf.get('telegram_group');
-	bot.on('message', function (msg) {
-		if (!msg.text) return;
-		if (msg.chat.id != groupId) return;
-		var nick = msg.from.username || msg.from.first_name;
-		var message = msg.text;
-		if (msg.reply_to_message) {
-			var re = named(/@(:<addr>\d+\.\d+\.\d+\.\d+:\d+)/m);
-			var match = re.exec(msg.reply_to_message.text);
-			if (match !== null) {
-				var addr = match.capture('addr');
-				servers[addr].say(message);
-			}
-		}
-	});
-}
 
 String.prototype.format = function () {
 	var formatted = this;
@@ -176,7 +153,6 @@ s.on('message', function (msg, info) {
 	if (servers[addr] === undefined && addr.match(/(\d+\.){3}\d+/)) {
 		servers[addr] = new Server(String(addr), String(rcon_pass));
 	}
-//	console.log(text); Nice to debug!
 
 	// join team
 	re = named(/"(:<user_name>.+)[<](:<user_id>\d+)[>][<](:<steam_id>.*)[>]" switched from team [<](:<user_team>CT|TERRORIST|Unassigned|Spectator)[>] to [<](:<new_team>CT|TERRORIST|Unassigned|Spectator)[>]/);
@@ -274,14 +250,6 @@ s.on('message', function (msg, info) {
 		cmd = param[0];
 		param.shift();
 		switch (String(cmd)) {
-		case 'admin':
-			if(token.length) {
-				var message = param.join(' ').replace('!admin ', '');
-				bot.sendMessage(groupId, '*' + match.capture('user_name') + '@' + addr + "*\n" + message + "\n*Admin called*", {
-					parse_mode: 'Markdown'
-				});
-			}
-			break;
 		case 'restore':
 		case 'replay':
 			if (isadmin) servers[addr].restore(param);
@@ -377,12 +345,12 @@ function Player(steamid, team, name, clantag) {
 	this.clantag = clantag;
 }
 
-function Server(address, pass, adminip, adminid, adminname) {
+function Server(address, rconpass, adminip, adminid, adminname) {
 	var tag = this;
 	this.state = {
 		ip: address.split(':')[0],
 		port: address.split(':')[1] || 27015,
-		pass: pass,
+		rconpass: rconpass,
 		live: false,
 		map: '',
 		maps: [],
@@ -426,7 +394,7 @@ function Server(address, pass, adminip, adminid, adminname) {
 		var conn = new rcon({
 			host: this.state.ip,
 			port: this.state.port,
-			password: this.state.pass
+			password: this.state.rconpass
 		});
 		conn.on('authenticated', function () {
 				cmd = cmd.split(';');
@@ -549,19 +517,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 			return;
 		}
 
-		if(pauseSettings.uses) 
-		{
-			if (!this.state.pauses[team]) return this.rcon(PAUSE_MISSING);
-			this.state.pauses[team]-=1;
-			this.rcon(PAUSE_REMAINING.format(this.state.pauses[team], pauseSettings.uses));
-		}
-		
-		if(token.length) {
-			var message = this.clantag('TERRORIST') + ' - ' + this.clantag('CT') + "\n*Match paused*";
-			bot.sendMessage(groupId, '*Console@' + this.state.ip + ':' + this.state.port + "*\n" + message, {
-				parse_mode: 'Markdown'
-			});
-		}
 		this.rcon(PAUSE_ENABLED);
 		this.state.paused = true;
 		this.state.unpause = {
@@ -574,23 +529,23 @@ function Server(address, pass, adminip, adminid, adminname) {
 	};
 	this.matchPause = function() {
 		this.rcon(MATCH_PAUSED);
-		
-		if (pauseSettings.time) {
+
+		if (pauseTime) {
 			clearTimeout(this.state.pauses.timer);
 			this.state.pauses.timer = setTimeout(function() {
 				tag.rcon(PAUSE_TIMEOUT);
 				tag.state.pauses.timer = setTimeout(function() {
 					tag.ready(true);
 				}, 20*1000);
-			}, (pauseSettings.time-20)*1000);
-			this.rcon(PAUSE_TIME.format(pauseSettings.time));
+			}, (pauseTime-20)*1000);
+			this.rcon(PAUSE_TIME.format(pauseTime));
 		}
 	};
 	this.status = function () {
 		var conn = new rcon({
 			host: this.state.ip,
 			port: this.state.port,
-			password: this.state.pass
+			password: this.state.rconpass
 		}).on('error', function (err) {
 		}).exec('status', function (res) {
 			var re = named(/map\s+:\s+(:<map>.*?)\s/);
@@ -686,12 +641,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 					setTimeout(function () {
 						tag.rcon(MATCH_STARTED);
 					}, 9000);
-					if(token.length) {
-						var message = this.stats(false) + "\n" + this.state.maps.join(' ').replace(this.state.map, '*' + this.state.map + '*').replace(/de_/g, '') + "\n*Match started*";
-						bot.sendMessage(groupId, '*Console@' + this.state.ip + ':' + this.state.port + "*\n" + message, {
-							parse_mode: 'Markdown'
-						});
-					}
 				}
 				setTimeout(function () {
 					tag.rcon('say \x054...');
@@ -712,12 +661,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 		}
 	};
 	this.newmap = function (map, delay) {
-		if(token.length) {
-			var message = this.stats(false) + "\n" + this.state.maps.join(' ').replace(map, '*' + map + '*').replace(/de_/g, '') + "\n*Map loaded*";
-			bot.sendMessage(groupId, '*Console@' + this.state.ip + ':' + this.state.port + "*\n" + message, {
-				parse_mode: 'Markdown'
-			});
-		}
 		if (delay === undefined) delay = 10000;
 		var index = -1;
 		if (this.state.maps.indexOf(map) >= 0) {
@@ -727,10 +670,6 @@ function Server(address, pass, adminip, adminid, adminname) {
 			this.state.maps = [map];
 			this.state.map = map;
 		}
-		
-		this.state.pauses[this.clantag('CT')] = pauseSettings.uses;
-		this.state.pauses[this.clantag('TERRORIST')] = pauseSettings.uses;
-		
 		setTimeout(function () {
 			tag.stats(false);
 			tag.warmup();
@@ -882,8 +821,8 @@ function Server(address, pass, adminip, adminid, adminname) {
 		}
 	};
 	this.quit = function () {
-		this.rcon('say \x10Goodbye from OrangeBot!');
-		this.rcon('logaddress_delall;log off');
+		this.rcon('say \x10Goodbye from OrangeBot');
+		this.rcon('logaddress_delall; log off');
 	};
 	this.debug = function () {
 		this.rcon('say \x10live: ' + this.state.live + ' paused: ' + this.state.paused + ' freeze: ' + this.state.freeze + ' knife: ' + this.state.knife + ' knifewinner: ' + this.state.knifewinner + ' ready: T:' + this.state.ready.TERRORIST + ' CT:' + this.state.ready.CT + ' unpause: T:' + this.state.unpause.TERRORIST + ' CT:' + this.state.unpause.CT);
@@ -973,21 +912,21 @@ process.on('uncaughtException', function (err) {
 	}
 });
 
-function addServer(host, port, pass) {
+function addServer(host, port, rconpass) {
 	if (serveriteration < server_config.length) {
 		console.log('OrangeBot 3.0: ' + host + ':' + port + ' - Trying to establish connection to Server . . .');
 		tcpp.probe(host, port, function(err, available) {
 			if (available) {
 				dns.lookup(host, 4, function (err, ip) {
 					console.log('OrangeBot 3.0: ' + host + ':' + port + ' - Server is reachable. Adding to server list and connecting . . .');
-					servers[ip + ':' + port] = new Server(ip + ':' + port, pass);
+					servers[ip + ':' + port] = new Server(ip + ':' + port, rconpass);
 					serveriteration++;
-					addServer(server_config[serveriteration].host, server_config[serveriteration].port, server_config[serveriteration].pass);
+					addServer(server_config[serveriteration].host, server_config[serveriteration].port, server_config[serveriteration].rconpass);
 				});
 			} else {
 				console.log('OrangeBot 3.0: ' + host + ':' + port + ' - ERROR: Server is not reachable.');
 				serveriteration++;
-				addServer(server_config[serveriteration].host, server_config[serveriteration].port, server_config[serveriteration].pass);
+				addServer(server_config[serveriteration].host, server_config[serveriteration].port, server_config[serveriteration].rconpass);
 			}
 		});
 	} 
@@ -1000,7 +939,7 @@ function initConnection() {
 	if(serverType == "local") myip = localIp;
 	else myip = externalIp;
 
-	addServer(server_config[0].host, server_config[0].port, server_config[0].pass);
+	addServer(server_config[0].host, server_config[0].port, server_config[0].rconpass);
 
 	setTimeout( () => {
 		console.log('____________________________________________________________');
