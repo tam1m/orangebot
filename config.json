@@ -1,14 +1,14 @@
 {
 	"port": 1337,
 	"server": [{
-		"host": "10.0.0.24",
+		"host": "192.168.25.3",
 		"port": 27015,
-		"rconpass": "ankka"
+		"rconpass": "123"
 	}],
 	"admins": [],
-	"default_rcon": "ankka",
+	"default_rcon": "123",
 	"telegram_token": "",
-	"telegram_group": "-148659596",
+	"telegram_group": "",
 	"config_warmup": "cfg/warmup.cfg",
 	"config_knife": "cfg/knife.cfg",
 	"config_match": "cfg/match.cfg",
@@ -20,5 +20,5 @@
 	"fullmapdefault": false, 
 	"pause_time": 0,
 	"ready_time": 0,
-	"serverType": "external"
+	"serverType": "local"
 }
