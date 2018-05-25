@@ -47,6 +47,22 @@ var WELCOME = 'say \x10Hi! I\'m ArenaPortal v3.0.;say \x10Start a match with \x0
 	SERIES_FINISHED = 'say \x10Finished the series!';
 	RESTORE_ROUND = 'mp_backup_restore_load_file "{0}";say \x10Round \x06{1}\x10 has been restored, resuming match in:;say \x085...';
 
+
+	var app = require('express')();
+	var server = require('http').Server(app);
+	var io = require('socket.io')(server);
+	
+	server.listen(3000);
+	
+	app.get('/', function (req, res) {
+	  res.sendFile(__dirname + '/index.html');
+	});
+	
+	io.on('connection', function (socket) {
+		io.emit('servers', servers);
+	});
+	
+
 ///////////////////////////////////////////////////////////////////////////////
 var argv = require('minimist')(process.argv.slice(2));
 if(argv.h === true) {
@@ -173,6 +189,7 @@ s.on('message', function (msg, info) {
 			servers[addr].state.players[match.capture('steam_id')].name = match.capture('user_name');
 		}
 		servers[addr].lastlog = +new Date();
+		io.emit('servers', servers);
 	}
 
 	// clantag
@@ -197,6 +214,7 @@ s.on('message', function (msg, info) {
 			delete servers[addr].state.players[match.capture('steam_id')];
 		}
 		servers[addr].lastlog = +new Date();
+		io.emit('servers', servers);
 	}
 
 	// map loading
@@ -217,6 +235,7 @@ s.on('message', function (msg, info) {
 	if (match !== null) {
 		servers[addr].newmap(match.capture('map'));
 		servers[addr].lastlog = +new Date();
+		io.emit('servers', servers);
 	}
 
 	// round start
@@ -225,6 +244,7 @@ s.on('message', function (msg, info) {
 	if (match !== null) {
 		servers[addr].round();
 		servers[addr].lastlog = +new Date();
+		io.emit('servers', servers);
 	}
 
 	// round end
@@ -243,6 +263,7 @@ s.on('message', function (msg, info) {
 		}
 	
 		servers[addr].lastlog = +new Date();
+		io.emit('servers', servers);
 	}
 
 	re = named(/Game Over: competitive/);
@@ -250,6 +271,7 @@ s.on('message', function (msg, info) {
 	if (match !== null) {
 		servers[addr].mapend();
 		servers[addr].lastlog = +new Date();
+		io.emit('servers', servers);
 	}
 
 	// !command
@@ -346,6 +368,7 @@ s.on('message', function (msg, info) {
 		}
 		servers[addr].lastlog = +new Date();
 	}
+
 });
 
 function clean(str) {
@@ -572,11 +595,15 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 		setTimeout(function () {
 			tag.rcon(LIVE+';mp_unpause_match');
 		}, 5000);
+
+		io.emit('servers', servers);
 	};
 	this.round = function () {
 		this.state.freeze = false;
 		this.state.paused = false;
 		this.rcon(ROUND_STARTED);
+
+		io.emit('servers', servers);
 	};
 	this.pause = function (team) {
 		team = this.clantag(team);
@@ -595,6 +622,8 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 		if (this.state.freeze) {
 			this.matchPause();
 		}
+
+		io.emit('servers', servers);
 	};
 	this.forceunpause = function () {
 		if (!this.state.live) return;
@@ -609,6 +638,8 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 			'TERRORIST': true,
 			'CT': true
 		};
+
+		io.emit('servers', servers);
 	};
 	this.matchPause = function() {
 		this.rcon(MATCH_PAUSED);
@@ -623,6 +654,8 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 			}, (pauseTime-20)*1000);
 			this.rcon(PAUSE_TIME.format(pauseTime));
 		}
+
+		io.emit('servers', servers);
 	};
 	this.status = function () {
 		var conn = new rcon({
@@ -655,10 +688,12 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 			}
 			conn.close();
 		}).connect();
+
+		io.emit('servers', servers);
 	};
 	this.start = function (maps) {
 		this.state.score = [];
-		possible_maps = ['de_mirage', 'de_cache', 'de_dust2', 'de_overpass', 'de_train', 'de_nuke', 'de_inferno'];
+		possible_maps = ['de_mirage', 'de_cache', 'de_dust2', 'de_overpass', 'de_train', 'de_nuke', 'de_inferno', 'de_cbble'];
 
 		let actual_maps = [];
 		let teamnames = [];
@@ -693,6 +728,8 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 				tag.status();
 			}, 1000);
 		}
+
+		io.emit('servers', servers);
 	};
 	this.ready = function (team) {
 		if (this.state.live && this.state.paused) {
@@ -758,6 +795,8 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 				}, 5000);
 			}
 		}
+
+		io.emit('servers', servers);
 	};
 	this.newmap = function (map, delay) {
 		if (delay === undefined) delay = 10000;
@@ -786,9 +825,11 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 			this.rcon(KNIFE_DISABLED);
 			if("timer" in this.state.ready) clearTimeout(this.state.ready.timer);
 		}
+
+		io.emit('servers', servers);
 	};
 
-        this.record = function () {
+    this.record = function () {
 		if (this.state.live) return;
 		if (this.state.record === true) {
 			this.state.record = false;
@@ -797,7 +838,9 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 			this.state.record = true;
 			this.rcon(DEMO_RECENABLED);
 		}
-        };
+
+		io.emit('servers', servers);
+    };
 
 	this.settings = function () {
 		this.rcon(SETTINGS);
@@ -835,18 +878,20 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 				this.rcon('changelevel ' + this.state.maps[this.state.mapindex]);
 			}, 20000);
 		}
+
+		io.emit('servers', servers);
 	}
 
 	this.overtime = function () {
-                if (this.state.ot === true) {
-                        this.state.ot = false;
-                        this.rcon(OT_DISABLED);
-			this.rcon('mp_overtime_enable 0');
-                } else {
-                        this.state.ot = true;
-                        this.rcon(OT_ENABLED);
-			this.rcon(this.getconfig(config_overtime));
-                }
+			if (this.state.ot === true) {
+				this.state.ot = false;
+				this.rcon(OT_DISABLED);
+				this.rcon('mp_overtime_enable 0');
+			} else {
+				this.state.ot = true;
+				this.rcon(OT_ENABLED);
+				this.rcon(this.getconfig(config_overtime));
+			}
         };
 
 	this.fullmap = function () {
@@ -926,6 +971,8 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 			this.lo3();
 			this.startrecord();
 		}
+
+		io.emit('servers', servers);
 	};
 	this.swap = function (team) {
 		if (team == this.state.knifewinner) {
@@ -934,6 +981,8 @@ function Server(address, rconpass, adminip, adminid, adminname) {
 			lo3();
 			this.startrecord();
 		}
+
+		io.emit('servers', servers);
 	};
 	this.quit = function () {
 		this.rcon('say \x10Goodbye from ArenaPortal');
@@ -1073,3 +1122,6 @@ function initConnection() {
 function id64(steamid) {
 	return (new SteamID(String(steamid))).getSteamID64();
 }
+
+
+

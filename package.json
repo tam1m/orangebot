@@ -9,13 +9,15 @@
     "url": "https://github.com/dejavueakay/orangebot"
   },
   "dependencies": {
+    "express": "^4.16.3",
     "ip": "latest",
-    "public-ip": "latest",
+    "minimist": "latest",
     "named-regexp": "latest",
     "nconf": "latest",
+    "public-ip": "latest",
     "simple-rcon": "latest",
+    "socket.io": "^2.1.1",
     "steamid": "latest",
-    "minimist": "latest",
     "tcp-ping": "latest"
   }
 }
