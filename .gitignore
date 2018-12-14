@@ -29,4 +29,5 @@ node_modules
 config.json
 orangebot-linux
 orangebot-win.exe
+orangebot-macos
 package-lock.json
