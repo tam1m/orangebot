@@ -1,0 +1,26 @@
+{
+	"port": 1337,
+	"server": [{
+		"host": "127.0.0.1",
+		"port": 37015,
+		"rconpass": "pw"
+	}],
+	"admins": ["123456789"],
+	"default_rcon": "pw",
+	"telegram_token": "",
+	"telegram_group": "",
+	"config_warmup": "cfg/warmup.cfg",
+	"config_knife": "cfg/knife.cfg",
+	"config_match": "cfg/match.cfg",
+	"config_overtime": "cfg/overtime.cfg",
+	"config_fullmap": "cfg/fullmap.cfg",
+	"recorddemo": false,
+	"knifedefault": true,
+	"otdefault": true,
+	"fullmapdefault": false, 
+	"pause_time": 0,
+	"ready_time": 0,
+	"serverType": "external"
+}
+
+
